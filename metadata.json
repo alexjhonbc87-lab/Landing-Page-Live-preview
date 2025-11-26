@@ -1,0 +1,7 @@
+{
+  "name": "Project Starlit - Lead Gen Studio",
+  "description": "A comprehensive AI-powered workspace for generating landing pages, lead generation content, and marketing assets using Gemini 3.3.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
