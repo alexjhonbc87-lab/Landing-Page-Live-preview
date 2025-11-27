@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { LandingPageFormData } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: "AIzaSyDmEe7rii9D9vkK4GSoEL2Mpcdu0omU1eQ" });
 
 export const generateLandingPage = async (data: LandingPageFormData): Promise<string> => {
   const modelId = "gemini-2.5-flash"; 
