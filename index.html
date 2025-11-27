@@ -17,9 +17,11 @@
         };
       })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use specific stable version of Tailwind v3 -->
+    <script src="https://cdn.tailwindcss.com/3.4.5"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             colors: {

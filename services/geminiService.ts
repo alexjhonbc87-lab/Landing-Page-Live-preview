@@ -18,9 +18,9 @@ export const generateLandingPage = async (data: LandingPageFormData): Promise<st
 
     **Technical Requirements**:
     1.  **Output Format**: Return ONLY valid, raw HTML code. Start with \`<!DOCTYPE html>\`.
-    2.  **Meta & Head**:
+    2.  **Meta & Head Structure**:
         *   Include \`<meta charset="UTF-8">\` and \`<meta name="viewport" content="width=device-width, initial-scale=1.0">\`.
-        *   **CRITICAL**: Include this script block IMMEDIATELY before the Tailwind script to suppress console warnings:
+        *   **CRITICAL**: Include this script block FIRST in the head to suppress warnings:
             \`\`\`html
             <script>
               (function() {
@@ -32,12 +32,27 @@ export const generateLandingPage = async (data: LandingPageFormData): Promise<st
               })();
             </script>
             \`\`\`
-        *   Include Tailwind CSS: \`<script src="https://cdn.tailwindcss.com"></script>\`
-        *   Include a custom tailwind config script to define a professional color palette matching the product vibe (e.g., extend colors).
+        *   **CRITICAL**: Load Tailwind CSS v3.4.5 specifically: \`<script src="https://cdn.tailwindcss.com/3.4.5"></script>\`
+        *   **CRITICAL**: Include the config script AFTER the tailwind script:
+            \`\`\`html
+            <script>
+              tailwind.config = {
+                theme: {
+                  extend: {
+                    colors: {
+                      primary: '#2563eb',
+                      secondary: '#1e40af',
+                    }
+                  }
+                }
+              }
+            </script>
+            \`\`\`
     3.  **Styling & Design**: 
         *   Use Tailwind CSS utility classes for EVERYTHING.
         *   Ensure a modern, clean, and trustworthy aesthetic (Stripe or Linear style).
         *   Use \`min-h-screen\` on the body.
+        *   Ensure responsive design (use md: and lg: classes).
     4.  **Icons**: Use FontAwesome: \`<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\`
     5.  **Images**: Use high-quality placeholders from Unsplash Source.
         *   Format: \`https://images.unsplash.com/photo-[ID]?auto=format&fit=crop&w=1200&q=80\`
