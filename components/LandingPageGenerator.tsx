@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Monitor, 
   Smartphone, 
@@ -17,7 +17,11 @@ import {
   Download,
   Eye,
   Layout,
-  Code
+  Code,
+  Share2,
+  Copy,
+  Check,
+  AlertTriangle
 } from 'lucide-react';
 import { ViewMode, LandingPageFormData } from '../types';
 import { generateLandingPage } from '../services/geminiService';
@@ -30,6 +34,7 @@ export const LandingPageGenerator: React.FC = () => {
   const [deployStep, setDeployStep] = useState(0); // 0: Config, 1: Deploying, 2: Success
   const [liveUrl, setLiveUrl] = useState<string>("");
   const [showSeoSettings, setShowSeoSettings] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
   
   const [formData, setFormData] = useState<LandingPageFormData>({
     pageName: '',
@@ -41,22 +46,36 @@ export const LandingPageGenerator: React.FC = () => {
     subdomain: ''
   });
 
+  // Check for shared URL on mount
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const sharedData = url.searchParams.get('s');
+      
+      if (sharedData) {
+        // Decode the state from the URL: Base64 -> URI Component -> JSON
+        const decoded = JSON.parse(decodeURIComponent(atob(sharedData)));
+        
+        // Update form state
+        setFormData(prev => ({ ...prev, ...decoded }));
+        
+        // Auto-generate the page for the visitor
+        generateWithData(decoded);
+      }
+    } catch (e) {
+      console.error("Failed to parse shared data", e);
+    }
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleGenerate = async () => {
-    if (!formData.offerDescription) {
-        alert("Please enter a product description.");
-        return;
-    }
-
+  const generateWithData = async (data: LandingPageFormData) => {
     setIsLoading(true);
-    // Keep previous HTML visible or clear it? Keeping it creates smoother experience if retrying
-    // setGeneratedHtml(null); 
     try {
-      const html = await generateLandingPage(formData);
+      const html = await generateLandingPage(data);
       setGeneratedHtml(html);
     } catch (error) {
       console.error(error);
@@ -64,6 +83,14 @@ export const LandingPageGenerator: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGenerate = async () => {
+    if (!formData.offerDescription) {
+        alert("Please enter a product description.");
+        return;
+    }
+    await generateWithData(formData);
   };
 
   const openDeployModal = () => {
@@ -98,6 +125,7 @@ export const LandingPageGenerator: React.FC = () => {
   const closeDeployModal = () => {
     setShowDeployModal(false);
     setDeployStep(0);
+    setCopySuccess(false);
   };
 
   const handleLivePreview = () => {
@@ -118,6 +146,38 @@ export const LandingPageGenerator: React.FC = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  // Generate the shareable public link robustly
+  const getShareUrl = () => {
+    try {
+      // Clean the current URL to just the base
+      const url = new URL(window.location.href);
+      
+      // Remove any existing query params to start fresh
+      url.search = '';
+      url.hash = '';
+
+      // Create the state string
+      const stateString = JSON.stringify(formData);
+      const encoded = btoa(encodeURIComponent(stateString));
+      
+      // Set the parameter
+      url.searchParams.set('s', encoded);
+      
+      return url.toString();
+    } catch (e) {
+      return "Error generating link";
+    }
+  };
+
+  const copyShareLink = () => {
+    const url = getShareUrl();
+    if (url && url !== "Error generating link") {
+      navigator.clipboard.writeText(url);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    }
   };
 
   return (
@@ -360,7 +420,9 @@ export const LandingPageGenerator: React.FC = () => {
                        <div className="flex flex-col items-center">
                           <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
                           <p className="text-lg font-medium text-white">Generating your site...</p>
-                          <p className="text-sm text-gray-500 mt-1">Writing HTML, configuring Tailwind, and polishing content.</p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {window.location.search.includes('?s=') ? 'Loading shared page...' : 'Writing HTML, configuring Tailwind, and polishing content.'}
+                          </p>
                        </div>
                     ) : (
                        <div className="opacity-50 flex flex-col items-center">
@@ -454,24 +516,49 @@ export const LandingPageGenerator: React.FC = () => {
                   </div>
                   <h4 className="text-white font-bold text-xl">Ready for Launch!</h4>
                   <p className="text-gray-400 text-sm mt-2 mb-6 max-w-xs mx-auto">
-                    Your page has been generated. View it live instantly or download the source code.
+                    Your page is live. Share the public link below or download the source code.
                   </p>
                   
+                  {/* Shareable Link Section */}
+                  <div className="w-full bg-[#0f1520] border border-gray-700 rounded-lg p-3 mb-4 text-left">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1.5 flex items-center justify-between">
+                       <span className="flex items-center"><Share2 className="w-3 h-3 mr-1" /> Public Share Link</span>
+                       <span className="text-blue-400 text-[10px] font-normal lowercase">auto-generates for visitors</span>
+                    </label>
+                    <div className="flex space-x-2">
+                       <input 
+                          readOnly 
+                          value={getShareUrl()} 
+                          className="flex-1 bg-[#161b26] border border-gray-700 text-gray-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 truncate"
+                       />
+                       <button 
+                          onClick={copyShareLink}
+                          className={`px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center ${copySuccess ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                       >
+                          {copySuccess ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                       </button>
+                    </div>
+                    <div className="mt-2 flex items-start text-[10px] text-yellow-500/80">
+                      <AlertTriangle className="w-3 h-3 mr-1 flex-shrink-0 mt-0.5" />
+                      <span>Note: This link works if <strong>this app</strong> is hosted publicly. If you are on a local/preview server, others may not be able to access it.</span>
+                    </div>
+                  </div>
+
                   <div className="w-full space-y-3">
                     <button 
                       onClick={() => window.open(liveUrl, '_blank')}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center shadow-lg"
+                      className="w-full bg-[#1e293b] hover:bg-[#2d3b55] text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center border border-gray-600"
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      Open Live Site
+                      Open Local Preview (New Tab)
                     </button>
                     
                     <button 
                         onClick={handleDownload}
-                        className="w-full bg-[#0f1520] border border-gray-700 hover:border-gray-500 hover:text-white text-gray-300 font-medium py-3 rounded-lg transition-colors flex items-center justify-center"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center shadow-lg"
                       >
                         <Download className="w-4 h-4 mr-2" />
-                        Download Code (GitHub Pages Ready)
+                        Download Code (GitHub Ready)
                     </button>
                   </div>
                   
