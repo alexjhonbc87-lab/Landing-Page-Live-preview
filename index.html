@@ -5,7 +5,34 @@
     <link rel="icon" type="image/svg+xml" href="https://vitejs.dev/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lead Gen Studio</title>
+    <!-- Suppress Tailwind CDN production warning -->
+    <script>
+      (function() {
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+          if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) {
+            return;
+          }
+          originalWarn.apply(console, args);
+        };
+      })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              gray: {
+                800: '#1f2937',
+                900: '#111827',
+                950: '#0B1019',
+              }
+            }
+          }
+        }
+      }
+    </script>
     <style>
       /* Custom Scrollbar for dark theme */
       .custom-scrollbar::-webkit-scrollbar {
@@ -30,6 +57,11 @@
       .no-scrollbar {
         -ms-overflow-style: none;
         scrollbar-width: none;
+      }
+      
+      body {
+        background-color: #0f172a;
+        color: white;
       }
     </style>
   <script type="importmap">

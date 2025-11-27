@@ -18,30 +18,47 @@ export const generateLandingPage = async (data: LandingPageFormData): Promise<st
 
     **Technical Requirements**:
     1.  **Output Format**: Return ONLY valid, raw HTML code. Start with \`<!DOCTYPE html>\`.
-    2.  **Styling**: Use Tailwind CSS via CDN.
-        *   Include this script in head: \`<script src="https://cdn.tailwindcss.com"></script>\`
-        *   Include a custom config script to define a professional color palette matching the product vibe.
-    3.  **Responsiveness**: Fully responsive (Mobile, Tablet, Desktop).
+    2.  **Meta & Head**:
+        *   Include \`<meta charset="UTF-8">\` and \`<meta name="viewport" content="width=device-width, initial-scale=1.0">\`.
+        *   **CRITICAL**: Include this script block IMMEDIATELY before the Tailwind script to suppress console warnings:
+            \`\`\`html
+            <script>
+              (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                  if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+                  originalWarn.apply(console, args);
+                };
+              })();
+            </script>
+            \`\`\`
+        *   Include Tailwind CSS: \`<script src="https://cdn.tailwindcss.com"></script>\`
+        *   Include a custom tailwind config script to define a professional color palette matching the product vibe (e.g., extend colors).
+    3.  **Styling & Design**: 
+        *   Use Tailwind CSS utility classes for EVERYTHING.
+        *   Ensure a modern, clean, and trustworthy aesthetic (Stripe or Linear style).
+        *   Use \`min-h-screen\` on the body.
     4.  **Icons**: Use FontAwesome: \`<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\`
-    5.  **Images**: Use high-quality placeholders from Unsplash Source or Picsum. 
-        *   Example: \`https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80\` (Use relevant keywords for images).
+    5.  **Images**: Use high-quality placeholders from Unsplash Source.
+        *   Format: \`https://images.unsplash.com/photo-[ID]?auto=format&fit=crop&w=1200&q=80\`
+        *   Select realistic IDs for business/tech/lifestyle images.
     6.  **Structure**:
-        *   **Header/Nav**: Logo (text), CTA button.
-        *   **Hero Section**: Compelling Headline, Subheadline, Primary CTA, Hero Image/Graphic.
-        *   **Social Proof**: "Trusted by" logos or Testimonials.
-        *   **Features/Benefits**: Grid layout.
-        *   **How it Works/Steps**: Clear breakdown.
-        *   **FAQ Section**: Accordion style (using details/summary tags).
-        *   **Footer**: Links, copyright.
-    7.  **Content**: Write persuasive, professional copy based on the provided offer description. Do not use Lorem Ipsum unless absolutely necessary.
+        *   **Navbar**: Sticky, Logo, CTA.
+        *   **Hero**: Big bold headline, subhead, primary CTA, hero image.
+        *   **Social Proof**: Logos of companies or stats.
+        *   **Features**: Grid of 3 columns with icons.
+        *   **How it Works**: Step-by-step.
+        *   **Testimonials**: specific to the target audience.
+        *   **CTA Section**: Final push.
+        *   **Footer**: Links.
+    7.  **Content**: Write persuasive, professional copy based on the provided offer description.
 
     **SEO Injection**:
-    *   Title: ${data.pageName}
+    *   Title Tag: ${data.pageName}
     *   Meta Description: ${data.metaDescription || `Best offer for ${data.pageName}`}
-    *   Keywords: ${data.keywords || ''}
 
     **Constraint**: 
-    Do not include markdown code blocks (like \`\`\`html). Return just the clean HTML string.
+    Do not include markdown code blocks (like \`\`\`html). Return just the clean HTML string. Ensure the HTML is well-formed.
   `;
 
   try {

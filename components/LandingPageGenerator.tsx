@@ -16,7 +16,8 @@ import {
   ChevronUp,
   Download,
   Eye,
-  Layout
+  Layout,
+  Code
 } from 'lucide-react';
 import { ViewMode, LandingPageFormData } from '../types';
 import { generateLandingPage } from '../services/geminiService';
@@ -52,7 +53,8 @@ export const LandingPageGenerator: React.FC = () => {
     }
 
     setIsLoading(true);
-    setGeneratedHtml(null); 
+    // Keep previous HTML visible or clear it? Keeping it creates smoother experience if retrying
+    // setGeneratedHtml(null); 
     try {
       const html = await generateLandingPage(formData);
       setGeneratedHtml(html);
@@ -412,14 +414,14 @@ export const LandingPageGenerator: React.FC = () => {
                   
                   <div className="bg-[#0f1520] p-4 rounded-lg border border-gray-700 mb-6">
                      <h4 className="text-xs font-bold text-gray-400 uppercase mb-3">Deployment Target</h4>
-                     <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="text-gray-400">Environment</span>
-                        <span className="text-white font-mono bg-gray-800 px-2 py-0.5 rounded text-xs">Production</span>
+                     <div className="flex items-center justify-center text-center p-3 border border-gray-800 rounded bg-[#161b26] mb-2">
+                        <Code className="w-5 h-5 text-gray-400 mb-1 mx-auto" />
+                        <span className="text-white text-sm font-semibold">Standalone HTML5</span>
+                        <p className="text-[10px] text-gray-500 mt-1">Universal Compatibility</p>
                      </div>
-                     <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-400">Assets</span>
-                        <span className="text-green-400 text-xs">Optimized (Tailwind CDN)</span>
-                     </div>
+                     <p className="text-xs text-gray-500 mt-2 text-center">
+                       Uses Tailwind CDN for instant deployment without build steps. Perfect for GitHub Pages or Netlify Drag & Drop.
+                     </p>
                   </div>
 
                   <button 
@@ -452,7 +454,7 @@ export const LandingPageGenerator: React.FC = () => {
                   </div>
                   <h4 className="text-white font-bold text-xl">Ready for Launch!</h4>
                   <p className="text-gray-400 text-sm mt-2 mb-6 max-w-xs mx-auto">
-                    Your page has been generated. Use the Live Link to view it or Download to host it globally on GitHub.
+                    Your page has been generated. View it live instantly or download the source code.
                   </p>
                   
                   <div className="w-full space-y-3">
@@ -461,7 +463,7 @@ export const LandingPageGenerator: React.FC = () => {
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center shadow-lg"
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      Visit Live Site (Preview)
+                      Open Live Site
                     </button>
                     
                     <button 
@@ -469,7 +471,7 @@ export const LandingPageGenerator: React.FC = () => {
                         className="w-full bg-[#0f1520] border border-gray-700 hover:border-gray-500 hover:text-white text-gray-300 font-medium py-3 rounded-lg transition-colors flex items-center justify-center"
                       >
                         <Download className="w-4 h-4 mr-2" />
-                        Download index.html (For GitHub Pages)
+                        Download Code (GitHub Pages Ready)
                     </button>
                   </div>
                   
