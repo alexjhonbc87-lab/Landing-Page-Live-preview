@@ -3,7 +3,7 @@ import { LandingPageFormData } from "../types";
 
 // Use the environment variable for the API key as required.
 // This allows the hosting platform or local .env file to provide a valid key.
-const ai = new GoogleGenAI({ apiKey: "AIzaSyBUtPulPiFYmwdbV22xV1fkdnuPlT6qs50" });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateLandingPage = async (data: LandingPageFormData): Promise<string> => {
   const modelId = "gemini-2.5-flash"; 
