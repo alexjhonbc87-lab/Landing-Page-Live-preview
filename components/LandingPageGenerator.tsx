@@ -15,7 +15,8 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
-  Copy
+  Eye,
+  Layout
 } from 'lucide-react';
 import { ViewMode, LandingPageFormData } from '../types';
 import { generateLandingPage } from '../services/geminiService';
@@ -51,7 +52,7 @@ export const LandingPageGenerator: React.FC = () => {
     }
 
     setIsLoading(true);
-    setGeneratedHtml(null); // Clear previous result to show loading state clearly
+    setGeneratedHtml(null); 
     try {
       const html = await generateLandingPage(formData);
       setGeneratedHtml(html);
@@ -65,14 +66,13 @@ export const LandingPageGenerator: React.FC = () => {
 
   const openDeployModal = () => {
     if (!generatedHtml) return;
-    // Generate a default subdomain if not set
     if (!formData.subdomain) {
-      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const randomSuffix = Math.random().toString(36).substring(2, 6);
       const sanitizedName = formData.pageName
         .toLowerCase()
         .replace(/[^a-z0-9]/g, '-')
         .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '') || 'my-page';
+        .replace(/^-|-$/g, '') || 'page';
       
       setFormData(prev => ({...prev, subdomain: `${sanitizedName}-${randomSuffix}`}));
     }
@@ -85,7 +85,7 @@ export const LandingPageGenerator: React.FC = () => {
 
     // Simulate deployment process
     setTimeout(() => {
-      // Create a Blob URL to simulate a hosted site
+      // Create a Blob URL to simulate a hosted site for the user immediately
       const blob = new Blob([generatedHtml || ''], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       setLiveUrl(url);
@@ -111,7 +111,7 @@ export const LandingPageGenerator: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${formData.subdomain || 'landing-page'}.html`;
+    a.download = 'index.html'; // Save as index.html for easy GitHub Pages deployment
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -119,17 +119,17 @@ export const LandingPageGenerator: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-1 overflow-hidden h-full relative">
+    <div className="flex flex-1 overflow-hidden h-full relative bg-[#0B1019]">
       {/* Left Panel: Inputs */}
-      <div className="w-[400px] bg-[#0B1019] text-gray-200 border-r border-gray-800 overflow-y-auto flex flex-col flex-shrink-0 custom-scrollbar z-10">
+      <div className="w-[420px] bg-[#0B1019] border-r border-gray-800 overflow-y-auto flex flex-col flex-shrink-0 custom-scrollbar z-10 shadow-xl">
         <div className="p-6 border-b border-gray-800">
-          <div className="flex items-start mb-2">
-            <div className="bg-violet-600 p-2 rounded-lg mr-3 text-white shadow-lg shadow-violet-900/20">
-              <Pencil className="w-5 h-5" />
+          <div className="flex items-center mb-1">
+            <div className="bg-blue-600 p-2 rounded-lg mr-3">
+              <Pencil className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">New Landing Page</h2>
-              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+              <p className="text-xs text-gray-400 mt-0.5">
                 Generate and build a high-converting landing page from scratch.
               </p>
             </div>
@@ -138,27 +138,27 @@ export const LandingPageGenerator: React.FC = () => {
 
         <div className="p-6 space-y-6 pb-24">
           {/* Page Name */}
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Page Name</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Page Name</label>
             <input
               type="text"
               name="pageName"
               value={formData.pageName}
               onChange={handleInputChange}
               placeholder="e.g., My First Sales Page"
-              className="w-full px-4 py-3 bg-[#1e293b] border border-gray-700 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-all placeholder-gray-500 text-sm text-white"
+              className="w-full px-4 py-3 bg-[#161b26] border border-gray-700 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-gray-600 text-sm text-white"
             />
           </div>
 
           {/* Page Type */}
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Landing Page Type</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Landing Page Type</label>
             <div className="relative">
               <select
                 name="pageType"
                 value={formData.pageType}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-[#1e293b] border border-gray-700 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none appearance-none text-sm text-white cursor-pointer"
+                className="w-full px-4 py-3 bg-[#161b26] border border-gray-700 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none appearance-none text-sm text-white cursor-pointer"
               >
                 <option>General Sales</option>
                 <option>Webinar Registration</option>
@@ -166,74 +166,75 @@ export const LandingPageGenerator: React.FC = () => {
                 <option>Product Launch</option>
                 <option>Waitlist</option>
                 <option>Mobile App Showcase</option>
+                <option>SaaS Pricing Page</option>
               </select>
               <div className="absolute right-3 top-3.5 pointer-events-none text-gray-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                <ChevronDown className="w-4 h-4" />
               </div>
             </div>
           </div>
 
           {/* Description */}
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Your Offer / Product Description</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Your Offer / Product Description</label>
             <textarea
               name="offerDescription"
               value={formData.offerDescription}
               onChange={handleInputChange}
               rows={5}
               placeholder="e.g., A 6-week live coaching program for new freelance writers looking to scale their business..."
-              className="w-full px-4 py-3 bg-[#1e293b] text-white border border-gray-700 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none resize-none text-sm placeholder-gray-500 leading-relaxed"
+              className="w-full px-4 py-3 bg-[#161b26] text-white border border-gray-700 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none resize-none text-sm placeholder-gray-600 leading-relaxed"
             />
           </div>
 
           {/* Target Audience */}
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Target Audience</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Target Audience</label>
             <textarea
               name="targetAudience"
               value={formData.targetAudience}
               onChange={handleInputChange}
               rows={3}
               placeholder="e.g., Aspiring writers who want to quit their 9-5."
-              className="w-full px-4 py-3 bg-[#1e293b] text-white border border-gray-700 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none resize-none text-sm placeholder-gray-500"
+              className="w-full px-4 py-3 bg-[#161b26] text-white border border-gray-700 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none resize-none text-sm placeholder-gray-600"
             />
           </div>
 
           {/* SEO & Advanced Settings */}
-          <div className="border border-gray-700 rounded-lg bg-[#161f32]">
+          <div className="border border-gray-700 rounded-lg bg-[#161b26] overflow-hidden">
              <button 
                 onClick={() => setShowSeoSettings(!showSeoSettings)}
-                className="w-full px-4 py-3 flex items-center justify-between text-xs font-bold text-gray-300 uppercase tracking-wider hover:bg-[#1e293b] transition-colors rounded-lg"
+                className="w-full px-4 py-3 flex items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-wide hover:bg-[#1f2937] transition-colors"
              >
                 <div className="flex items-center">
-                   <Settings className="w-4 h-4 mr-2 text-gray-400" />
+                   <Settings className="w-3.5 h-3.5 mr-2" />
                    Advanced SEO & Metadata
                 </div>
-                {showSeoSettings ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {showSeoSettings ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
              </button>
              
              {showSeoSettings && (
-                <div className="px-4 pb-4 space-y-4 pt-2 border-t border-gray-700">
-                   <div>
-                      <label className="block text-xs text-gray-500 mb-1">Meta Description</label>
+                <div className="px-4 pb-4 space-y-4 pt-2 border-t border-gray-700 bg-[#0B1019]">
+                   <div className="pt-2">
+                      <label className="block text-xs text-gray-500 mb-1.5">Meta Description</label>
                       <textarea
                         name="metaDescription"
                         value={formData.metaDescription}
                         onChange={handleInputChange}
                         rows={2}
                         placeholder="Brief summary for search engines..."
-                        className="w-full px-3 py-2 bg-[#0B1019] text-white border border-gray-700 rounded focus:ring-1 focus:ring-violet-500 outline-none resize-none text-xs"
+                        className="w-full px-3 py-2 bg-[#161b26] text-white border border-gray-700 rounded focus:ring-1 focus:ring-blue-500 outline-none resize-none text-xs"
                       />
                    </div>
                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Keywords (comma separated)</label>
+                      <label className="block text-xs text-gray-500 mb-1.5">Keywords (comma separated)</label>
                       <input
                         type="text"
                         name="keywords"
                         value={formData.keywords}
                         onChange={handleInputChange}
                         placeholder="marketing, sales, course..."
-                        className="w-full px-3 py-2 bg-[#0B1019] text-white border border-gray-700 rounded focus:ring-1 focus:ring-violet-500 outline-none text-xs"
+                        className="w-full px-3 py-2 bg-[#161b26] text-white border border-gray-700 rounded focus:ring-1 focus:ring-blue-500 outline-none text-xs"
                       />
                    </div>
                 </div>
@@ -243,16 +244,16 @@ export const LandingPageGenerator: React.FC = () => {
           <button
             onClick={handleGenerate}
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-lg transition-all shadow-lg shadow-violet-900/30 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-lg transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2 border border-blue-500"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Creating Page...</span>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Generating Page...</span>
               </>
             ) : (
               <>
-                <Wand2 className="w-5 h-5" />
+                <Wand2 className="w-4 h-4" />
                 <span>Generate Landing Page</span>
               </>
             )}
@@ -261,65 +262,64 @@ export const LandingPageGenerator: React.FC = () => {
       </div>
 
       {/* Right Panel: Preview */}
-      <div className="flex-1 bg-[#0f1520] p-6 flex flex-col overflow-hidden relative">
+      <div className="flex-1 bg-[#0f1520] p-6 flex flex-col h-full overflow-hidden relative">
         
         {/* Preview Container Wrapper */}
-        <div className="flex-1 bg-[#1e293b] rounded-xl flex flex-col border border-gray-800 overflow-hidden shadow-2xl relative">
+        <div className="flex-1 bg-[#1e293b] rounded-xl flex flex-col border border-gray-700 overflow-hidden shadow-2xl relative">
           
-          {/* Preview Toolbar */}
-          <div className="h-14 bg-[#111827] border-b border-gray-800 flex items-center justify-between px-4 z-10 flex-shrink-0">
-            <div className="flex items-center space-x-2">
-              <div className="flex space-x-1.5 mr-4">
-                <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+          {/* Mac-style Window Header */}
+          <div className="h-12 bg-[#111827] border-b border-gray-700 flex items-center justify-between px-4 z-10 flex-shrink-0">
+            <div className="flex items-center space-x-2 w-1/3">
+              <div className="flex space-x-2">
+                <div className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]"></div>
+                <div className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]"></div>
+                <div className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]"></div>
               </div>
             </div>
 
-            <div className="flex items-center bg-[#1f2937] rounded-lg p-1 border border-gray-700">
+            <div className="flex items-center justify-center space-x-1 bg-[#1f2937] rounded-lg p-1 border border-gray-700">
               <button 
                 onClick={() => setViewMode(ViewMode.DESKTOP)}
-                className={`p-1.5 rounded-md transition-all ${viewMode === ViewMode.DESKTOP ? 'bg-violet-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
-                title="Desktop View"
+                className={`p-1.5 rounded-md transition-all ${viewMode === ViewMode.DESKTOP ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                title="Desktop"
               >
                 <Monitor className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => setViewMode(ViewMode.TABLET)}
-                className={`p-1.5 rounded-md transition-all ${viewMode === ViewMode.TABLET ? 'bg-violet-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
-                title="Tablet View"
+                className={`p-1.5 rounded-md transition-all ${viewMode === ViewMode.TABLET ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                title="Tablet"
               >
                 <Tablet className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => setViewMode(ViewMode.MOBILE)}
-                className={`p-1.5 rounded-md transition-all ${viewMode === ViewMode.MOBILE ? 'bg-violet-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
-                title="Mobile View"
+                className={`p-1.5 rounded-md transition-all ${viewMode === ViewMode.MOBILE ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                title="Mobile"
               >
                 <Smartphone className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center justify-end space-x-3 w-1/3">
                <button 
                   onClick={handleLivePreview}
                   disabled={!generatedHtml}
-                  className={`flex items-center px-3 py-1.5 transition-colors text-xs font-medium ${generatedHtml ? 'text-gray-300 hover:text-white' : 'text-gray-600 cursor-not-allowed'}`}
-                  title="Open in new tab"
+                  className={`flex items-center px-3 py-1.5 rounded text-xs font-medium transition-colors ${generatedHtml ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-600 cursor-not-allowed'}`}
                >
-                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                  Live Preview
+                  <Eye className="w-3.5 h-3.5 mr-1.5" />
+                  Preview
                </button>
                <button 
                   onClick={openDeployModal}
                   disabled={!generatedHtml}
-                  className={`flex items-center px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  className={`flex items-center px-4 py-1.5 rounded-md text-xs font-bold transition-all border ${
                     generatedHtml 
-                    ? 'bg-white text-gray-900 hover:bg-gray-100 shadow-lg shadow-white/10' 
-                    : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                    ? 'bg-white text-gray-900 border-white hover:bg-gray-100' 
+                    : 'bg-transparent text-gray-600 border-gray-700 cursor-not-allowed'
                   }`}
                >
-                  <Rocket className="w-3 h-3 mr-2" />
+                  <Rocket className="w-3.5 h-3.5 mr-2" />
                   Deploy
                </button>
             </div>
@@ -329,19 +329,18 @@ export const LandingPageGenerator: React.FC = () => {
           <div className="bg-[#111827] py-1 text-center border-b border-gray-800 flex-shrink-0">
              <div className="flex items-center justify-center text-[10px] font-bold tracking-widest text-gray-500 uppercase">
                 <Pencil className="w-3 h-3 mr-1.5" />
-                Live Editor Mode
+                EDITOR MODE
              </div>
           </div>
 
           {/* Canvas Area */}
           <div className="flex-1 bg-[#0f1520] relative overflow-hidden flex flex-col">
-            
-            <div className={`flex-1 overflow-auto custom-scrollbar flex ${viewMode !== ViewMode.DESKTOP ? 'items-center justify-center py-8' : 'items-stretch'}`}>
+            <div className={`flex-1 overflow-auto custom-scrollbar flex ${viewMode !== ViewMode.DESKTOP ? 'items-center justify-center py-8 bg-[#0f1520]' : 'items-stretch'}`}>
               {generatedHtml ? (
                 <div 
                   className={`transition-all duration-300 ease-in-out bg-white shadow-2xl flex-shrink-0 mx-auto ${
-                    viewMode === ViewMode.MOBILE ? 'w-[375px] h-[667px] rounded-2xl border-[10px] border-gray-800' :
-                    viewMode === ViewMode.TABLET ? 'w-[768px] h-[1024px] rounded-xl border-[10px] border-gray-800' :
+                    viewMode === ViewMode.MOBILE ? 'w-[375px] h-[667px] rounded-2xl border-[8px] border-[#2d3748] ring-1 ring-black' :
+                    viewMode === ViewMode.TABLET ? 'w-[768px] h-[1024px] rounded-xl border-[8px] border-[#2d3748] ring-1 ring-black' :
                     'w-full min-h-full rounded-none border-none'
                   }`}
                 >
@@ -349,7 +348,7 @@ export const LandingPageGenerator: React.FC = () => {
                     title="Generated Preview"
                     srcDoc={generatedHtml}
                     className="w-full h-full bg-white rounded-[inherit]"
-                    sandbox="allow-scripts"
+                    sandbox="allow-scripts allow-modals allow-same-origin allow-forms"
                     style={{ border: 'none', display: 'block' }}
                   />
                 </div>
@@ -357,45 +356,34 @@ export const LandingPageGenerator: React.FC = () => {
                  <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8 text-center max-w-md mx-auto">
                     {isLoading ? (
                        <div className="flex flex-col items-center">
-                          <div className="relative">
-                            <div className="w-16 h-16 border-4 border-violet-600/30 border-t-violet-600 rounded-full animate-spin"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <Wand2 className="w-6 h-6 text-violet-500" />
-                            </div>
-                          </div>
-                          <p className="text-xl font-bold text-white mt-6">Generating Page...</p>
-                          <p className="text-sm text-gray-400 mt-2">Writing code, optimizing layout, and styling...</p>
+                          <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+                          <p className="text-lg font-medium text-white">Generating your site...</p>
+                          <p className="text-sm text-gray-500 mt-1">Writing HTML, configuring Tailwind, and polishing content.</p>
                        </div>
                     ) : (
-                       <>
-                         <div className="w-24 h-24 bg-[#1e293b] rounded-full flex items-center justify-center mb-6 shadow-inner ring-1 ring-gray-700">
-                            <Rocket className="w-10 h-10 text-gray-500" />
-                         </div>
-                         <h3 className="text-xl font-semibold text-white mb-2">Ready to Build</h3>
-                         <p className="text-gray-400 leading-relaxed">
-                           Fill out the details on the left sidebar to generate a complete, high-converting landing page in seconds.
-                         </p>
-                       </>
+                       <div className="opacity-50 flex flex-col items-center">
+                         <Layout className="w-16 h-16 text-gray-600 mb-4" />
+                         <p className="text-sm text-gray-500">Your live preview will appear here once content is generated.</p>
+                       </div>
                     )}
                  </div>
               )}
             </div>
-            
           </div>
         </div>
       </div>
 
       {/* Deploy Modal */}
       {showDeployModal && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#1e293b] w-full max-w-lg rounded-xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in-up">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-[#1e293b] w-full max-w-lg rounded-xl border border-gray-700 shadow-2xl overflow-hidden">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-white flex items-center">
-                  <Globe className="w-5 h-5 mr-2 text-violet-500" />
-                  Deploy to Web
+                  <Globe className="w-5 h-5 mr-2 text-blue-500" />
+                  Deploy Landing Page
                 </h3>
-                <button onClick={closeDeployModal} className="text-gray-400 hover:text-white">
+                <button onClick={closeDeployModal} className="text-gray-400 hover:text-white transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -404,7 +392,7 @@ export const LandingPageGenerator: React.FC = () => {
               {deployStep === 0 && (
                 <div className="py-2">
                   <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Custom Subdomain</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Subdomain Configuration</label>
                     <div className="flex rounded-md shadow-sm">
                       <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-600 bg-gray-700 text-gray-400 text-sm">
                         https://
@@ -414,106 +402,83 @@ export const LandingPageGenerator: React.FC = () => {
                         name="subdomain"
                         value={formData.subdomain}
                         onChange={handleInputChange}
-                        className="flex-1 min-w-0 block w-full px-3 py-2.5 rounded-none border-t border-b border-gray-600 bg-[#0B1019] text-white focus:ring-violet-500 focus:border-violet-500 sm:text-sm"
-                        placeholder="my-awesome-page"
+                        className="flex-1 min-w-0 block w-full px-3 py-2.5 rounded-none border-t border-b border-gray-600 bg-[#0B1019] text-white focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       />
                       <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-600 bg-gray-700 text-gray-400 text-sm">
-                        .starlit-pages.app
+                        .starlit.app
                       </span>
                     </div>
-                    <p className="mt-2 text-xs text-gray-500">Choose a unique address for your landing page.</p>
                   </div>
                   
                   <div className="bg-[#0f1520] p-4 rounded-lg border border-gray-700 mb-6">
-                     <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Deploy Summary</h4>
-                     <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-500">SEO Meta Tags</span>
-                        <span className={formData.metaDescription ? "text-green-500" : "text-gray-600"}>{formData.metaDescription ? "Included" : "None"}</span>
+                     <h4 className="text-xs font-bold text-gray-400 uppercase mb-3">Deployment Target</h4>
+                     <div className="flex items-center justify-between text-sm mb-2">
+                        <span className="text-gray-400">Environment</span>
+                        <span className="text-white font-mono bg-gray-800 px-2 py-0.5 rounded text-xs">Production</span>
                      </div>
-                     <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Environment</span>
-                        <span className="text-white">Production Edge</span>
+                     <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-400">Assets</span>
+                        <span className="text-green-400 text-xs">Optimized (Tailwind CDN)</span>
                      </div>
                   </div>
 
-                  <div className="flex w-full space-x-3">
-                    <button 
+                  <button 
                       onClick={confirmDeploy}
-                      className="flex-1 bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center shadow-lg shadow-violet-900/40"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center shadow-lg shadow-blue-900/40"
                     >
                       <Rocket className="w-4 h-4 mr-2" />
-                      Publish Now
-                    </button>
-                  </div>
+                      Build & Deploy
+                  </button>
                 </div>
               )}
 
               {/* Step 1: Loading */}
               {deployStep === 1 && (
-                <div className="py-10 flex flex-col items-center text-center">
-                  <div className="relative mb-6">
-                     <div className="absolute inset-0 bg-violet-500 blur-xl opacity-20 rounded-full"></div>
-                     <Loader2 className="w-16 h-16 text-violet-500 animate-spin relative z-10" />
+                <div className="py-12 flex flex-col items-center text-center">
+                  <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+                  <h4 className="text-white font-medium text-lg">Building...</h4>
+                  <div className="w-64 bg-gray-700 h-1.5 rounded-full mt-4 overflow-hidden">
+                     <div className="h-full bg-blue-500 animate-progress w-full origin-left"></div>
                   </div>
-                  <h4 className="text-white font-medium text-lg">Deploying to Global Edge...</h4>
-                  <p className="text-gray-400 text-sm mt-2">Optimizing assets, verifying DNS, and propagating.</p>
+                  <p className="text-gray-400 text-xs mt-3">Minifying assets • Verifying DNS • Propagating</p>
                 </div>
               )}
 
               {/* Step 2: Success */}
               {deployStep === 2 && (
-                <div className="py-4 flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4 ring-2 ring-green-500/50 animate-bounce-subtle">
-                    <CheckCircle2 className="w-8 h-8 text-green-500" />
+                <div className="py-2 flex flex-col items-center text-center">
+                  <div className="w-14 h-14 bg-green-500/20 rounded-full flex items-center justify-center mb-4 ring-1 ring-green-500/50">
+                    <CheckCircle2 className="w-7 h-7 text-green-500" />
                   </div>
-                  <h4 className="text-white font-bold text-xl">Deployment Successful!</h4>
-                  <p className="text-gray-400 text-sm mt-2 mb-6">Your landing page is now live.</p>
+                  <h4 className="text-white font-bold text-xl">Ready for Launch!</h4>
+                  <p className="text-gray-400 text-sm mt-2 mb-6 max-w-xs mx-auto">
+                    Your page has been generated. Use the Live Link to view it or Download to host it globally on GitHub.
+                  </p>
                   
-                  <div className="w-full bg-[#0f1520] p-4 rounded-lg border border-gray-700 flex items-center justify-between mb-6 group cursor-pointer hover:border-violet-500 transition-colors" onClick={() => window.open(liveUrl, '_blank')}>
-                    <div className="flex flex-col items-start overflow-hidden mr-4">
-                       <span className="text-xs text-gray-500 mb-1">Live URL</span>
-                       <span className="text-violet-400 text-sm font-mono truncate w-full text-left">
-                         https://{formData.subdomain || 'site'}.starlit-pages.app
-                       </span>
-                    </div>
-                    <ExternalLink className="w-5 h-5 text-gray-500 group-hover:text-white" />
-                  </div>
-
-                  <div className="flex w-full space-x-3 mb-3">
+                  <div className="w-full space-y-3">
                     <button 
                       onClick={() => window.open(liveUrl, '_blank')}
-                      className="flex-1 bg-violet-600 hover:bg-violet-700 text-white font-medium py-2.5 rounded-lg transition-colors shadow-lg shadow-violet-900/40"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center shadow-lg"
                     >
-                      Visit Live Site
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Visit Live Site (Preview)
                     </button>
+                    
                     <button 
-                      onClick={closeDeployModal}
-                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-medium py-2.5 rounded-lg transition-colors"
-                    >
-                      Close
+                        onClick={handleDownload}
+                        className="w-full bg-[#0f1520] border border-gray-700 hover:border-gray-500 hover:text-white text-gray-300 font-medium py-3 rounded-lg transition-colors flex items-center justify-center"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download index.html (For GitHub Pages)
                     </button>
                   </div>
                   
-                  <button 
-                      onClick={handleDownload}
-                      className="w-full bg-[#0f1520] border border-gray-700 hover:border-gray-500 text-gray-300 font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center text-sm"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download Code (for GitHub/Netlify)
+                  <button onClick={closeDeployModal} className="mt-4 text-xs text-gray-500 hover:text-gray-300 underline">
+                    Return to Editor
                   </button>
                 </div>
               )}
             </div>
-            
-            {deployStep === 2 && (
-              <div className="bg-[#111827] px-6 py-3 border-t border-gray-800 flex justify-between items-center">
-                <p className="text-xs text-center text-gray-500 flex items-center">
-                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                  Status: Operational
-                </p>
-                <span className="text-xs text-gray-600 font-mono">v1.0.0</span>
-              </div>
-            )}
           </div>
         </div>
       )}

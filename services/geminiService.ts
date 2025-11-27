@@ -4,38 +4,44 @@ import { LandingPageFormData } from "../types";
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateLandingPage = async (data: LandingPageFormData): Promise<string> => {
-  const modelId = "gemini-2.5-flash"; // Efficient for code generation
+  const modelId = "gemini-2.5-flash"; 
   
   const prompt = `
-    You are an expert frontend web developer and conversion rate optimization specialist.
-    Create a complete, single-file HTML landing page using Tailwind CSS (via CDN) based on the following specifications.
-    
-    IMPORTANT: The output must be a valid, standalone HTML file starting with <!DOCTYPE html>.
+    You are an elite frontend web developer and conversion optimization expert.
+    Create a high-converting, single-file HTML landing page for a "${data.pageType}" named "${data.pageName}".
 
-    - Page Name: ${data.pageName}
-    - Type: ${data.pageType}
-    - Product/Offer: ${data.offerDescription}
-    - Target Audience: ${data.targetAudience}
-    ${data.metaDescription ? `- Meta Description: ${data.metaDescription}` : ''}
-    ${data.keywords ? `- Meta Keywords: ${data.keywords}` : ''}
+    **Product/Offer Context**:
+    ${data.offerDescription}
 
-    Requirements:
-    1. Start with <!DOCTYPE html> and <html lang="en">.
-    2. Use <script src="https://cdn.tailwindcss.com"></script> in the head.
-    3. Add <meta name="viewport" content="width=device-width, initial-scale=1.0"> for proper mobile responsiveness.
-    4. Add <title>${data.pageName}</title> in the head.
-    5. IF provided, include <meta name="description" content="..."> and <meta name="keywords" content="..."> in the head.
-    6. The design MUST be modern, high-converting, and visually stunning. Use a dark or light theme based on what fits the product best.
-    7. Ensure the body has 'min-h-screen' to take up full height.
-    8. Include these sections: 
-       - Hero Section (Headline, Subheadline, CTA Button)
-       - Features/Benefits Grid
-       - Social Proof / Testimonials (use placeholders)
-       - FAQ Section
-       - Final CTA Footer
-    9. Use FontAwesome via CDN for icons: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-    10. Use https://picsum.photos/800/600?random=1 (increment random number) for placeholder images.
-    11. Return ONLY the raw HTML code. Do not wrap it in markdown code blocks (like \`\`\`html). Do not include any explanation text. Just the HTML.
+    **Target Audience**:
+    ${data.targetAudience}
+
+    **Technical Requirements**:
+    1.  **Output Format**: Return ONLY valid, raw HTML code. Start with \`<!DOCTYPE html>\`.
+    2.  **Styling**: Use Tailwind CSS via CDN.
+        *   Include this script in head: \`<script src="https://cdn.tailwindcss.com"></script>\`
+        *   Include a custom config script to define a professional color palette matching the product vibe.
+    3.  **Responsiveness**: Fully responsive (Mobile, Tablet, Desktop).
+    4.  **Icons**: Use FontAwesome: \`<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\`
+    5.  **Images**: Use high-quality placeholders from Unsplash Source or Picsum. 
+        *   Example: \`https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80\` (Use relevant keywords for images).
+    6.  **Structure**:
+        *   **Header/Nav**: Logo (text), CTA button.
+        *   **Hero Section**: Compelling Headline, Subheadline, Primary CTA, Hero Image/Graphic.
+        *   **Social Proof**: "Trusted by" logos or Testimonials.
+        *   **Features/Benefits**: Grid layout.
+        *   **How it Works/Steps**: Clear breakdown.
+        *   **FAQ Section**: Accordion style (using details/summary tags).
+        *   **Footer**: Links, copyright.
+    7.  **Content**: Write persuasive, professional copy based on the provided offer description. Do not use Lorem Ipsum unless absolutely necessary.
+
+    **SEO Injection**:
+    *   Title: ${data.pageName}
+    *   Meta Description: ${data.metaDescription || `Best offer for ${data.pageName}`}
+    *   Keywords: ${data.keywords || ''}
+
+    **Constraint**: 
+    Do not include markdown code blocks (like \`\`\`html). Return just the clean HTML string.
   `;
 
   try {

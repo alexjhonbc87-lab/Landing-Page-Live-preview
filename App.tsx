@@ -10,7 +10,7 @@ export default function App() {
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#0f172a]">
         
         {/* Header / Banner Area */}
         <div className="bg-[#0f172a] px-8 pt-6 pb-2 flex-shrink-0">
