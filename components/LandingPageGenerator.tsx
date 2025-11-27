@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Monitor, 
@@ -22,21 +23,38 @@ import {
   Copy,
   Check,
   AlertTriangle,
-  AlertCircle
+  AlertCircle,
+  Cloud,
+  Server,
+  Terminal,
+  Save
 } from 'lucide-react';
 import { ViewMode, LandingPageFormData } from '../types';
 import { generateLandingPage } from '../services/geminiService';
+import { saveLandingPage, publishLandingPage } from '../services/landingPageService';
+import { auth } from '../services/firebase';
+
+// The fixed production base URL as requested
+const PRODUCTION_BASE_URL = 'https://landingpages-theta.vercel.app/';
 
 export const LandingPageGenerator: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.DESKTOP);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
+  
+  // Deploy State
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [deployStep, setDeployStep] = useState(0); // 0: Config, 1: Deploying, 2: Success
+  const [deploymentStatus, setDeploymentStatus] = useState<string>("");
+  const [deploymentLog, setDeploymentLog] = useState<string[]>([]);
   const [liveUrl, setLiveUrl] = useState<string>("");
+  
   const [showSeoSettings, setShowSeoSettings] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Validation State
+  const [subdomainError, setSubdomainError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<LandingPageFormData>({
     pageName: '',
@@ -57,11 +75,7 @@ export const LandingPageGenerator: React.FC = () => {
       if (sharedData) {
         // Decode the state from the URL: Base64 -> URI Component -> JSON
         const decoded = JSON.parse(decodeURIComponent(atob(sharedData)));
-        
-        // Update form state
         setFormData(prev => ({ ...prev, ...decoded }));
-        
-        // Auto-generate the page for the visitor
         generateWithData(decoded);
       }
     } catch (e) {
@@ -71,8 +85,27 @@ export const LandingPageGenerator: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing again
+    
+    if (name === 'subdomain') {
+      const normalized = value.toLowerCase();
+      const validCharsRegex = /^[a-z0-9-]*$/;
+      let errorMsg = null;
+
+      if (!validCharsRegex.test(normalized)) {
+        errorMsg = "Only lowercase alphanumeric characters and hyphens are allowed.";
+      } else if (normalized.startsWith('-')) {
+        errorMsg = "Subdomain cannot start with a hyphen.";
+      } else if (normalized.endsWith('-')) {
+         errorMsg = "Subdomain cannot end with a hyphen.";
+      } else if (normalized.length > 63) {
+         errorMsg = "Subdomain cannot exceed 63 characters.";
+      }
+
+      setSubdomainError(errorMsg);
+      setFormData(prev => ({ ...prev, [name]: normalized }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
     if (error) setError(null);
   };
 
@@ -100,6 +133,8 @@ export const LandingPageGenerator: React.FC = () => {
 
   const openDeployModal = () => {
     if (!generatedHtml) return;
+    
+    // Auto-fill subdomain if empty
     if (!formData.subdomain) {
       const randomSuffix = Math.random().toString(36).substring(2, 6);
       const sanitizedName = formData.pageName
@@ -111,26 +146,55 @@ export const LandingPageGenerator: React.FC = () => {
       setFormData(prev => ({...prev, subdomain: `${sanitizedName}-${randomSuffix}`}));
     }
     setDeployStep(0);
+    setSubdomainError(null);
     setShowDeployModal(true);
+    setDeploymentLog([]);
   };
 
-  const confirmDeploy = () => {
-    setDeployStep(1);
+  const confirmDeploy = async () => {
+    if (subdomainError || !formData.subdomain || !generatedHtml) return;
+    if (!auth.currentUser) {
+       setError("You must be logged in to deploy.");
+       setShowDeployModal(false);
+       return;
+    }
 
-    // Simulate deployment process
-    setTimeout(() => {
-      // Create a Blob URL to simulate a hosted site for the user immediately
-      const blob = new Blob([generatedHtml || ''], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      setLiveUrl(url);
-      setDeployStep(2);
-    }, 2000);
+    setDeployStep(1);
+    setDeploymentStatus("Initializing...");
+    setDeploymentLog(["Initializing build environment..."]);
+
+    try {
+        // Step 1: Save Draft to Firestore
+        setDeploymentStatus("Saving to database...");
+        setDeploymentLog(prev => [...prev, "> Saving page configuration...", "> Uploading HTML content..."]);
+        
+        const pageId = await saveLandingPage(formData, generatedHtml);
+        setDeploymentLog(prev => [...prev, `> Page ID generated: ${pageId}`]);
+
+        // Step 2: Publish (Make Public)
+        setDeploymentStatus("Publishing...");
+        setDeploymentLog(prev => [...prev, "> Configuring public access...", "> Setting security rules..."]);
+        
+        const publicUrl = await publishLandingPage(pageId);
+        setDeploymentLog(prev => [...prev, `> Public URL active: ${publicUrl}`]);
+
+        // Success
+        setLiveUrl(publicUrl);
+        setDeployStep(2);
+        setDeploymentLog(prev => [...prev, "> Deployment successful!"]);
+
+    } catch (err: any) {
+        console.error("Deploy failed:", err);
+        setError("Deployment failed: " + err.message);
+        setShowDeployModal(false);
+    }
   };
 
   const closeDeployModal = () => {
     setShowDeployModal(false);
     setDeployStep(0);
     setCopySuccess(false);
+    setDeploymentLog([]);
   };
 
   const handleLivePreview = () => {
@@ -146,43 +210,32 @@ export const LandingPageGenerator: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'index.html'; // Save as index.html for easy GitHub Pages deployment
+    a.download = `${formData.subdomain || 'landing-page'}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  // Generate the shareable public link robustly
+  // Generate share link for editor state (not the finished page)
   const getShareUrl = () => {
     try {
-      // Clean the current URL to just the base
-      const url = new URL(window.location.href);
-      
-      // Remove any existing query params to start fresh
+      const url = new URL(PRODUCTION_BASE_URL);
       url.search = '';
       url.hash = '';
-
-      // Create the state string
       const stateString = JSON.stringify(formData);
       const encoded = btoa(encodeURIComponent(stateString));
-      
-      // Set the parameter
       url.searchParams.set('s', encoded);
-      
       return url.toString();
     } catch (e) {
       return "Error generating link";
     }
   };
 
-  const copyShareLink = () => {
-    const url = getShareUrl();
-    if (url && url !== "Error generating link") {
-      navigator.clipboard.writeText(url);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    }
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
   };
 
   return (
@@ -210,7 +263,7 @@ export const LandingPageGenerator: React.FC = () => {
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-start space-x-3">
                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                <div className="flex-1">
-                 <h4 className="text-sm font-bold text-red-500">Generation Failed</h4>
+                 <h4 className="text-sm font-bold text-red-500">Operation Failed</h4>
                  <p className="text-xs text-red-300 mt-1 leading-relaxed">{error}</p>
                </div>
                <button onClick={() => setError(null)} className="text-red-400 hover:text-red-200">
@@ -219,7 +272,7 @@ export const LandingPageGenerator: React.FC = () => {
             </div>
           )}
 
-          {/* Page Name */}
+          {/* Form Fields */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Page Name</label>
             <input
@@ -232,7 +285,6 @@ export const LandingPageGenerator: React.FC = () => {
             />
           </div>
 
-          {/* Page Type */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Landing Page Type</label>
             <div className="relative">
@@ -256,7 +308,6 @@ export const LandingPageGenerator: React.FC = () => {
             </div>
           </div>
 
-          {/* Description */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Your Offer / Product Description</label>
             <textarea
@@ -264,12 +315,11 @@ export const LandingPageGenerator: React.FC = () => {
               value={formData.offerDescription}
               onChange={handleInputChange}
               rows={5}
-              placeholder="e.g., A 6-week live coaching program for new freelance writers looking to scale their business..."
+              placeholder="e.g., A 6-week live coaching program for new freelance writers..."
               className="w-full px-4 py-3 bg-[#161b26] text-white border border-gray-700 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none resize-none text-sm placeholder-gray-600 leading-relaxed"
             />
           </div>
 
-          {/* Target Audience */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Target Audience</label>
             <textarea
@@ -282,7 +332,7 @@ export const LandingPageGenerator: React.FC = () => {
             />
           </div>
 
-          {/* SEO & Advanced Settings */}
+          {/* SEO Settings */}
           <div className="border border-gray-700 rounded-lg bg-[#161b26] overflow-hidden">
              <button 
                 onClick={() => setShowSeoSettings(!showSeoSettings)}
@@ -304,18 +354,16 @@ export const LandingPageGenerator: React.FC = () => {
                         value={formData.metaDescription}
                         onChange={handleInputChange}
                         rows={2}
-                        placeholder="Brief summary for search engines..."
                         className="w-full px-3 py-2 bg-[#161b26] text-white border border-gray-700 rounded focus:ring-1 focus:ring-blue-500 outline-none resize-none text-xs"
                       />
                    </div>
                    <div>
-                      <label className="block text-xs text-gray-500 mb-1.5">Keywords (comma separated)</label>
+                      <label className="block text-xs text-gray-500 mb-1.5">Keywords</label>
                       <input
                         type="text"
                         name="keywords"
                         value={formData.keywords}
                         onChange={handleInputChange}
-                        placeholder="marketing, sales, course..."
                         className="w-full px-3 py-2 bg-[#161b26] text-white border border-gray-700 rounded focus:ring-1 focus:ring-blue-500 outline-none text-xs"
                       />
                    </div>
@@ -345,42 +393,28 @@ export const LandingPageGenerator: React.FC = () => {
 
       {/* Right Panel: Preview */}
       <div className="flex-1 bg-[#0f1520] p-6 flex flex-col h-full overflow-hidden relative">
-        
-        {/* Preview Container Wrapper */}
         <div className="flex-1 bg-[#1e293b] rounded-xl flex flex-col border border-gray-700 overflow-hidden shadow-2xl relative">
           
-          {/* Mac-style Window Header */}
+          {/* Header */}
           <div className="h-12 bg-[#111827] border-b border-gray-700 flex items-center justify-between px-4 z-10 flex-shrink-0">
-            <div className="flex items-center space-x-2 w-1/3">
-              <div className="flex space-x-2">
-                <div className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]"></div>
-                <div className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]"></div>
-                <div className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]"></div>
-              </div>
+            <div className="flex space-x-2 w-1/3">
+              <div className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]"></div>
+              <div className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]"></div>
+              <div className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]"></div>
             </div>
 
             <div className="flex items-center justify-center space-x-1 bg-[#1f2937] rounded-lg p-1 border border-gray-700">
-              <button 
-                onClick={() => setViewMode(ViewMode.DESKTOP)}
-                className={`p-1.5 rounded-md transition-all ${viewMode === ViewMode.DESKTOP ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
-                title="Desktop"
-              >
-                <Monitor className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => setViewMode(ViewMode.TABLET)}
-                className={`p-1.5 rounded-md transition-all ${viewMode === ViewMode.TABLET ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
-                title="Tablet"
-              >
-                <Tablet className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => setViewMode(ViewMode.MOBILE)}
-                className={`p-1.5 rounded-md transition-all ${viewMode === ViewMode.MOBILE ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
-                title="Mobile"
-              >
-                <Smartphone className="w-4 h-4" />
-              </button>
+              {[ViewMode.DESKTOP, ViewMode.TABLET, ViewMode.MOBILE].map((mode) => (
+                <button 
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === mode ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                  {mode === ViewMode.DESKTOP && <Monitor className="w-4 h-4" />}
+                  {mode === ViewMode.TABLET && <Tablet className="w-4 h-4" />}
+                  {mode === ViewMode.MOBILE && <Smartphone className="w-4 h-4" />}
+                </button>
+              ))}
             </div>
 
             <div className="flex items-center justify-end space-x-3 w-1/3">
@@ -407,7 +441,6 @@ export const LandingPageGenerator: React.FC = () => {
             </div>
           </div>
 
-          {/* Editor Mode Bar */}
           <div className="bg-[#111827] py-1 text-center border-b border-gray-800 flex-shrink-0">
              <div className="flex items-center justify-center text-[10px] font-bold tracking-widest text-gray-500 uppercase">
                 <Pencil className="w-3 h-3 mr-1.5" />
@@ -415,7 +448,6 @@ export const LandingPageGenerator: React.FC = () => {
              </div>
           </div>
 
-          {/* Canvas Area */}
           <div className="flex-1 bg-[#0f1520] relative overflow-hidden flex flex-col">
             <div className={`flex-1 overflow-auto custom-scrollbar flex ${viewMode !== ViewMode.DESKTOP ? 'items-center justify-center py-8 bg-[#0f1520]' : 'items-stretch'}`}>
               {generatedHtml ? (
@@ -427,7 +459,7 @@ export const LandingPageGenerator: React.FC = () => {
                   }`}
                 >
                   <iframe
-                    title="Generated Preview"
+                    title="Preview"
                     srcDoc={generatedHtml}
                     className="w-full h-full bg-white rounded-[inherit]"
                     sandbox="allow-scripts allow-modals allow-same-origin allow-forms"
@@ -440,14 +472,11 @@ export const LandingPageGenerator: React.FC = () => {
                        <div className="flex flex-col items-center">
                           <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
                           <p className="text-lg font-medium text-white">Generating your site...</p>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {window.location.search.includes('?s=') ? 'Loading shared page...' : 'Writing HTML, configuring Tailwind, and polishing content.'}
-                          </p>
                        </div>
                     ) : (
                        <div className="opacity-50 flex flex-col items-center">
                          <Layout className="w-16 h-16 text-gray-600 mb-4" />
-                         <p className="text-sm text-gray-500">Your live preview will appear here once content is generated.</p>
+                         <p className="text-sm text-gray-500">Your live preview will appear here.</p>
                        </div>
                     )}
                  </div>
@@ -467,64 +496,59 @@ export const LandingPageGenerator: React.FC = () => {
                   <Globe className="w-5 h-5 mr-2 text-blue-500" />
                   Deploy Landing Page
                 </h3>
-                <button onClick={closeDeployModal} className="text-gray-400 hover:text-white transition-colors">
+                <button onClick={closeDeployModal} className="text-gray-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Step 0: Configuration */}
+              {/* Step 0: Config */}
               {deployStep === 0 && (
                 <div className="py-2">
                   <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Subdomain Configuration</label>
-                    <div className="flex rounded-md shadow-sm">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Subdomain URL</label>
+                    <div className="flex rounded-md shadow-sm relative">
                       <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-600 bg-gray-700 text-gray-400 text-sm">
-                        https://
+                        /page/
                       </span>
                       <input
                         type="text"
                         name="subdomain"
                         value={formData.subdomain}
                         onChange={handleInputChange}
-                        className="flex-1 min-w-0 block w-full px-3 py-2.5 rounded-none border-t border-b border-gray-600 bg-[#0B1019] text-white focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className={`flex-1 min-w-0 block w-full px-3 py-2.5 rounded-none rounded-r-md border border-gray-600 bg-[#0B1019] text-white focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${subdomainError ? 'border-red-500' : ''}`}
                       />
-                      <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-600 bg-gray-700 text-gray-400 text-sm">
-                        .starlit.app
-                      </span>
                     </div>
+                    {subdomainError && <p className="mt-2 text-xs text-red-400">{subdomainError}</p>}
                   </div>
                   
                   <div className="bg-[#0f1520] p-4 rounded-lg border border-gray-700 mb-6">
-                     <h4 className="text-xs font-bold text-gray-400 uppercase mb-3">Deployment Target</h4>
-                     <div className="flex items-center justify-center text-center p-3 border border-gray-800 rounded bg-[#161b26] mb-2">
-                        <Code className="w-5 h-5 text-gray-400 mb-1 mx-auto" />
-                        <span className="text-white text-sm font-semibold">Standalone HTML5</span>
-                        <p className="text-[10px] text-gray-500 mt-1">Universal Compatibility</p>
+                     <h4 className="text-xs font-bold text-gray-400 uppercase mb-3">Target</h4>
+                     <div className="flex items-center justify-center text-center p-3 border border-gray-800 rounded bg-[#161b26]">
+                        <Cloud className="w-5 h-5 text-blue-400 mb-1 mx-auto" />
+                        <span className="text-white text-sm font-semibold ml-2">Firestore Database</span>
                      </div>
-                     <p className="text-xs text-gray-500 mt-2 text-center">
-                       Uses Tailwind CDN for instant deployment without build steps. Perfect for GitHub Pages or Netlify Drag & Drop.
-                     </p>
                   </div>
 
                   <button 
                       onClick={confirmDeploy}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center shadow-lg shadow-blue-900/40"
+                      disabled={!!subdomainError || !formData.subdomain}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg disabled:opacity-50"
                     >
-                      <Rocket className="w-4 h-4 mr-2" />
-                      Build & Deploy
+                      <Rocket className="w-4 h-4 mr-2 inline" />
+                      Save & Publish
                   </button>
                 </div>
               )}
 
-              {/* Step 1: Loading */}
+              {/* Step 1: Deploying */}
               {deployStep === 1 && (
-                <div className="py-12 flex flex-col items-center text-center">
-                  <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-                  <h4 className="text-white font-medium text-lg">Building...</h4>
-                  <div className="w-64 bg-gray-700 h-1.5 rounded-full mt-4 overflow-hidden">
-                     <div className="h-full bg-blue-500 animate-progress w-full origin-left"></div>
+                <div className="py-6 flex flex-col items-center">
+                  <Loader2 className="w-16 h-16 text-blue-500 animate-spin mb-6" />
+                  <h4 className="text-white font-bold text-xl mb-2">Publishing Page</h4>
+                  <p className="text-blue-400 text-sm font-mono mb-6">{deploymentStatus}</p>
+                  <div className="w-full bg-[#0f1520] border border-gray-700 rounded-lg p-3 h-32 overflow-y-auto font-mono text-xs text-green-400">
+                     {deploymentLog.map((log, i) => <div key={i}>{log}</div>)}
                   </div>
-                  <p className="text-gray-400 text-xs mt-3">Minifying assets • Verifying DNS • Propagating</p>
                 </div>
               )}
 
@@ -534,55 +558,34 @@ export const LandingPageGenerator: React.FC = () => {
                   <div className="w-14 h-14 bg-green-500/20 rounded-full flex items-center justify-center mb-4 ring-1 ring-green-500/50">
                     <CheckCircle2 className="w-7 h-7 text-green-500" />
                   </div>
-                  <h4 className="text-white font-bold text-xl">Ready for Launch!</h4>
-                  <p className="text-gray-400 text-sm mt-2 mb-6 max-w-xs mx-auto">
-                    Your page is live. Share the public link below or download the source code.
+                  <h4 className="text-white font-bold text-xl">Published Successfully!</h4>
+                  <p className="text-gray-400 text-sm mt-2 mb-6">
+                    Your page is saved to the database and is publicly accessible.
                   </p>
                   
-                  {/* Shareable Link Section */}
-                  <div className="w-full bg-[#0f1520] border border-gray-700 rounded-lg p-3 mb-4 text-left">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1.5 flex items-center justify-between">
-                       <span className="flex items-center"><Share2 className="w-3 h-3 mr-1" /> Public Share Link</span>
-                       <span className="text-blue-400 text-[10px] font-normal lowercase">auto-generates for visitors</span>
-                    </label>
-                    <div className="flex space-x-2">
-                       <input 
-                          readOnly 
-                          value={getShareUrl()} 
-                          className="flex-1 bg-[#161b26] border border-gray-700 text-gray-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 truncate"
-                       />
-                       <button 
-                          onClick={copyShareLink}
-                          className={`px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center ${copySuccess ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-                       >
-                          {copySuccess ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                       </button>
-                    </div>
-                    <div className="mt-2 flex items-start text-[10px] text-yellow-500/80">
-                      <AlertTriangle className="w-3 h-3 mr-1 flex-shrink-0 mt-0.5" />
-                      <span>Note: This link works if <strong>this app</strong> is hosted publicly. If you are on a local/preview server, others may not be able to access it.</span>
-                    </div>
+                  <div className="w-full bg-[#0B1019] border border-gray-700 rounded-lg p-4 mb-4 text-center">
+                      <p className="text-[10px] uppercase font-bold text-gray-500 mb-2">Public URL</p>
+                      <a href={liveUrl} target="_blank" rel="noreferrer" className="text-blue-400 font-mono text-sm font-bold hover:underline break-all">
+                        {liveUrl}
+                      </a>
                   </div>
 
-                  <div className="w-full space-y-3">
-                    <button 
-                      onClick={() => window.open(liveUrl, '_blank')}
-                      className="w-full bg-[#1e293b] hover:bg-[#2d3b55] text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center border border-gray-600"
-                    >
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Open Local Preview (New Tab)
-                    </button>
-                    
-                    <button 
-                        onClick={handleDownload}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center shadow-lg"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download Code (GitHub Ready)
-                    </button>
+                  <div className="flex space-x-2 w-full">
+                     <button 
+                        onClick={() => copyToClipboard(liveUrl)}
+                        className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors ${copySuccess ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                     >
+                        {copySuccess ? 'Copied!' : 'Copy Link'}
+                     </button>
+                     <button 
+                        onClick={() => window.open(liveUrl, '_blank')}
+                        className="px-4 py-2.5 bg-[#1e293b] text-white rounded-lg hover:bg-[#2d3b55] border border-gray-600"
+                     >
+                        <ExternalLink className="w-4 h-4" />
+                     </button>
                   </div>
                   
-                  <button onClick={closeDeployModal} className="mt-4 text-xs text-gray-500 hover:text-gray-300 underline">
+                  <button onClick={closeDeployModal} className="mt-6 text-xs text-gray-500 hover:text-gray-300 underline">
                     Return to Editor
                   </button>
                 </div>

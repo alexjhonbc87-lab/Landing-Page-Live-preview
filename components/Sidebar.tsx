@@ -12,8 +12,14 @@ import {
   LogOut,
   LayoutGrid
 } from 'lucide-react';
+import { signOut } from 'firebase/auth';
+import { auth } from '../services/firebase';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  user?: any;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
   const menuItems = [
     { label: 'Generator', icon: LayoutGrid, active: false },
     { label: 'Video Script Generator', icon: Video, active: false },
@@ -26,6 +32,14 @@ export const Sidebar: React.FC = () => {
     { label: 'Events & Delivery', icon: CalendarCheck, active: false },
     { label: 'AI Reinforced Training', icon: Sparkles, active: false },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Error signing out", error);
+    }
+  };
 
   return (
     <div className="w-64 bg-[#0B1019] text-gray-400 flex flex-col h-full border-r border-gray-800 flex-shrink-0">
@@ -62,15 +76,22 @@ export const Sidebar: React.FC = () => {
       {/* User Profile */}
       <div className="p-4 bg-[#0f1520] border-t border-gray-800">
         <div className="flex items-center mb-4">
-          <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white">
-            <UserCircle className="w-6 h-6" />
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shrink-0">
+            <UserCircle className="w-5 h-5" />
           </div>
-          <div className="ml-3">
-            <p className="text-sm font-medium text-white">none</p>
-            <p className="text-xs text-gray-500">none@gmail.com</p>
+          <div className="ml-3 overflow-hidden">
+            <p className="text-sm font-medium text-white truncate w-full">
+              {user?.email ? user.email.split('@')[0] : 'User'}
+            </p>
+            <p className="text-xs text-gray-500 truncate w-full">
+              {user?.email || 'No email'}
+            </p>
           </div>
         </div>
-        <button className="w-full flex items-center text-sm font-medium hover:text-white transition-colors">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center text-sm font-medium hover:text-white transition-colors text-gray-400"
+        >
           <LogOut className="w-4 h-4 mr-2" />
           Logout
         </button>
