@@ -5,6 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="https://vitejs.dev/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lead Gen Studio</title>
+    
     <!-- Suppress Tailwind CDN production warning -->
     <script>
       (function() {
@@ -17,8 +18,10 @@
         };
       })();
     </script>
+    
     <!-- Use specific stable version of Tailwind v3 -->
     <script src="https://cdn.tailwindcss.com/3.4.5"></script>
+    
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -29,12 +32,26 @@
                 800: '#1f2937',
                 900: '#111827',
                 950: '#0B1019',
+              },
+              violet: {
+                950: '#1e1b4b',
+              }
+            },
+            animation: {
+              'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+              'pulse-slow': 'pulse 3s infinite',
+            },
+            keyframes: {
+              fadeInUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
               }
             }
           }
         }
       }
     </script>
+    
     <style>
       /* Custom Scrollbar for dark theme */
       .custom-scrollbar::-webkit-scrollbar {
@@ -66,19 +83,24 @@
         color: white;
       }
     </style>
-  <script type="importmap">
+    
+    <!-- Import Map for environments that require it, though Build Tools usually override this -->
+    <script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0"
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
   }
 }
 </script>
-</head>
+  </head>
   <body>
     <div id="root"></div>
+    <!-- CRITICAL: Entry Point Script for Vite/React -->
+    <script type="module" src="./index.tsx"></script>
   </body>
 </html>
