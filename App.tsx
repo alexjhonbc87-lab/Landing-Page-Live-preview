@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ToolsNavigation } from './components/ToolsNavigation';
 import { LandingPageGenerator } from './components/LandingPageGenerator';
+import { HomePage } from './components/HomePage';
 
 export default function App() {
+  // State to toggle between Home Page and Dashboard
+  const [showDashboard, setShowDashboard] = useState(false);
+
+  // If dashboard is not active, show the Home Page
+  if (!showDashboard) {
+    return <HomePage onEnterApp={() => setShowDashboard(true)} />;
+  }
+
+  // Dashboard Layout
   return (
     <div className="flex h-screen bg-[#0f172a] font-sans overflow-hidden">
       {/* Sidebar */}
@@ -16,9 +26,17 @@ export default function App() {
         <div className="bg-[#0f172a] px-8 pt-6 pb-2 flex-shrink-0">
            <div className="flex justify-between items-center mb-4">
               <h1 className="text-2xl font-bold text-white">Lead Gen & Content</h1>
-              <button className="bg-[#1e293b] hover:bg-[#2d3b55] text-gray-300 px-4 py-1.5 rounded-md text-sm border border-gray-700 transition-colors">
-                Notebook
-              </button>
+              <div className="flex items-center space-x-3">
+                 <button 
+                   onClick={() => setShowDashboard(false)} 
+                   className="text-gray-400 hover:text-white text-xs font-medium"
+                 >
+                   Back to Home
+                 </button>
+                 <button className="bg-[#1e293b] hover:bg-[#2d3b55] text-gray-300 px-4 py-1.5 rounded-md text-sm border border-gray-700 transition-colors">
+                   Notebook
+                 </button>
+              </div>
            </div>
            
            {/* Purple Gradient Banner */}
