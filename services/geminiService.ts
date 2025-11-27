@@ -1,7 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import { LandingPageFormData } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: "AIzaSyB4277sakPini1HfQ8UbCFNfqPOgATtRvk" });
+// Use the environment variable for the API key as required.
+// This allows the hosting platform or local .env file to provide a valid key.
+const ai = new GoogleGenAI({ apiKey: "AIzaSyBUtPulPiFYmwdbV22xV1fkdnuPlT6qs50" });
 
 export const generateLandingPage = async (data: LandingPageFormData): Promise<string> => {
   const modelId = "gemini-2.5-flash"; 
@@ -88,8 +90,14 @@ export const generateLandingPage = async (data: LandingPageFormData): Promise<st
     html = html.replace(/```html/g, '').replace(/```/g, '').trim();
     
     return html;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating landing page:", error);
-    throw new Error("Failed to generate landing page. Please check your API key and try again.");
+    
+    // Check for Rate Limit / Quota Exceeded error
+    if (error.status === 429 || (error.message && error.message.includes('429'))) {
+       throw new Error("API Quota Exceeded. The API key has reached its usage limit. Please check your plan.");
+    }
+    
+    throw new Error(error.message || "Failed to generate landing page. Please check your API key and try again.");
   }
 };

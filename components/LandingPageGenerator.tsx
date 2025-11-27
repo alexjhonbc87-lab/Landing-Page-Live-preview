@@ -77,9 +77,9 @@ export const LandingPageGenerator: React.FC = () => {
     try {
       const html = await generateLandingPage(data);
       setGeneratedHtml(html);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Failed to generate content. Please try again.");
+      alert(error.message || "Failed to generate content. Please try again.");
     } finally {
       setIsLoading(false);
     }
