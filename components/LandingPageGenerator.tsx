@@ -21,7 +21,8 @@ import {
   Share2,
   Copy,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 import { ViewMode, LandingPageFormData } from '../types';
 import { generateLandingPage } from '../services/geminiService';
@@ -35,6 +36,7 @@ export const LandingPageGenerator: React.FC = () => {
   const [liveUrl, setLiveUrl] = useState<string>("");
   const [showSeoSettings, setShowSeoSettings] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<LandingPageFormData>({
     pageName: '',
@@ -70,16 +72,19 @@ export const LandingPageGenerator: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing again
+    if (error) setError(null);
   };
 
   const generateWithData = async (data: LandingPageFormData) => {
     setIsLoading(true);
+    setError(null);
     try {
       const html = await generateLandingPage(data);
       setGeneratedHtml(html);
     } catch (error: any) {
       console.error(error);
-      alert(error.message || "Failed to generate content. Please try again.");
+      setError(error.message || "Failed to generate content. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +92,7 @@ export const LandingPageGenerator: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!formData.offerDescription) {
-        alert("Please enter a product description.");
+        setError("Please enter a product description to start.");
         return;
     }
     await generateWithData(formData);
@@ -199,6 +204,21 @@ export const LandingPageGenerator: React.FC = () => {
         </div>
 
         <div className="p-6 space-y-6 pb-24">
+          
+          {/* Error Banner */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-start space-x-3">
+               <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+               <div className="flex-1">
+                 <h4 className="text-sm font-bold text-red-500">Generation Failed</h4>
+                 <p className="text-xs text-red-300 mt-1 leading-relaxed">{error}</p>
+               </div>
+               <button onClick={() => setError(null)} className="text-red-400 hover:text-red-200">
+                 <X className="w-4 h-4" />
+               </button>
+            </div>
+          )}
+
           {/* Page Name */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Page Name</label>

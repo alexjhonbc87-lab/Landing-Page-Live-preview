@@ -1,11 +1,28 @@
 import { GoogleGenAI } from "@google/genai";
 import { LandingPageFormData } from "../types";
 
-// Use the environment variable for the API key as required.
-// This allows the hosting platform or local .env file to provide a valid key.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Retrieve API key from various possible environment variable sources.
+// This supports standard Node/Webpack (process.env) and Vite (import.meta.env).
+const getApiKey = (): string | undefined => {
+  // Check process.env (standard)
+  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    return process.env.API_KEY;
+  }
+  // Check Vite specific (import.meta.env)
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_KEY) {
+    return (import.meta as any).env.VITE_API_KEY;
+  }
+  return undefined;
+};
+
+const apiKey = getApiKey();
+const ai = new GoogleGenAI({ apiKey: apiKey || '' }); // Initialize with empty string if missing to allow error handling downstream
 
 export const generateLandingPage = async (data: LandingPageFormData): Promise<string> => {
+  if (!apiKey) {
+    throw new Error("API Key is missing. Please set 'API_KEY' or 'VITE_API_KEY' in your Vercel/Netlify Environment Variables.");
+  }
+
   const modelId = "gemini-2.5-flash"; 
   
   const prompt = `
@@ -95,7 +112,7 @@ export const generateLandingPage = async (data: LandingPageFormData): Promise<st
     
     // Check for Rate Limit / Quota Exceeded error
     if (error.status === 429 || (error.message && error.message.includes('429'))) {
-       throw new Error("API Quota Exceeded. The API key has reached its usage limit. Please check your plan.");
+       throw new Error("API Quota Exceeded. The API key in your Vercel/Netlify Environment Variables is exhausted. Please update it with a new key in your hosting dashboard.");
     }
     
     throw new Error(error.message || "Failed to generate landing page. Please check your API key and try again.");
