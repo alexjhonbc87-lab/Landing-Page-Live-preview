@@ -3,7 +3,6 @@ import {
   Monitor, 
   Smartphone, 
   Tablet, 
-  Eye, 
   ExternalLink, 
   Pencil,
   Wand2,
@@ -14,7 +13,9 @@ import {
   X,
   Settings,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Download,
+  Copy
 } from 'lucide-react';
 import { ViewMode, LandingPageFormData } from '../types';
 import { generateLandingPage } from '../services/geminiService';
@@ -84,7 +85,7 @@ export const LandingPageGenerator: React.FC = () => {
 
     // Simulate deployment process
     setTimeout(() => {
-      // Create a Blob URL to simulate a hosted site for the "Visit" button
+      // Create a Blob URL to simulate a hosted site
       const blob = new Blob([generatedHtml || ''], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       setLiveUrl(url);
@@ -104,10 +105,23 @@ export const LandingPageGenerator: React.FC = () => {
     window.open(url, '_blank');
   };
 
+  const handleDownload = () => {
+    if (!generatedHtml) return;
+    const blob = new Blob([generatedHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${formData.subdomain || 'landing-page'}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-1 overflow-hidden h-full relative">
       {/* Left Panel: Inputs */}
-      <div className="w-[400px] bg-[#0B1019] text-gray-200 border-r border-gray-800 overflow-y-auto flex flex-col flex-shrink-0 custom-scrollbar">
+      <div className="w-[400px] bg-[#0B1019] text-gray-200 border-r border-gray-800 overflow-y-auto flex flex-col flex-shrink-0 custom-scrollbar z-10">
         <div className="p-6 border-b border-gray-800">
           <div className="flex items-start mb-2">
             <div className="bg-violet-600 p-2 rounded-lg mr-3 text-white shadow-lg shadow-violet-900/20">
@@ -122,7 +136,7 @@ export const LandingPageGenerator: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 pb-24">
           {/* Page Name */}
           <div>
             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Page Name</label>
@@ -253,7 +267,7 @@ export const LandingPageGenerator: React.FC = () => {
         <div className="flex-1 bg-[#1e293b] rounded-xl flex flex-col border border-gray-800 overflow-hidden shadow-2xl relative">
           
           {/* Preview Toolbar */}
-          <div className="h-14 bg-[#111827] border-b border-gray-800 flex items-center justify-between px-4 z-10">
+          <div className="h-14 bg-[#111827] border-b border-gray-800 flex items-center justify-between px-4 z-10 flex-shrink-0">
             <div className="flex items-center space-x-2">
               <div className="flex space-x-1.5 mr-4">
                 <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
@@ -312,7 +326,7 @@ export const LandingPageGenerator: React.FC = () => {
           </div>
 
           {/* Editor Mode Bar */}
-          <div className="bg-[#111827] py-1 text-center border-b border-gray-800">
+          <div className="bg-[#111827] py-1 text-center border-b border-gray-800 flex-shrink-0">
              <div className="flex items-center justify-center text-[10px] font-bold tracking-widest text-gray-500 uppercase">
                 <Pencil className="w-3 h-3 mr-1.5" />
                 Live Editor Mode
@@ -320,50 +334,52 @@ export const LandingPageGenerator: React.FC = () => {
           </div>
 
           {/* Canvas Area */}
-          <div className="flex-1 bg-[#0f1520] relative overflow-hidden flex justify-center items-start pt-8 pb-8 custom-scrollbar overflow-y-auto w-full">
+          <div className="flex-1 bg-[#0f1520] relative overflow-hidden flex flex-col">
             
-            {generatedHtml ? (
-              <div 
-                className={`transition-all duration-300 ease-in-out bg-white shadow-2xl ${
-                  viewMode === ViewMode.MOBILE ? 'w-[375px] h-[667px] rounded-2xl border-[8px] border-gray-800' :
-                  viewMode === ViewMode.TABLET ? 'w-[768px] h-[1024px] rounded-xl border-[8px] border-gray-800' :
-                  'w-full h-full max-w-full rounded-none border-none'
-                }`}
-              >
-                <iframe
-                  title="Generated Preview"
-                  srcDoc={generatedHtml}
-                  className="w-full h-full bg-white"
-                  sandbox="allow-scripts"
-                  style={{ border: 'none' }}
-                />
-              </div>
-            ) : (
-               <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8 text-center max-w-md">
-                  {isLoading ? (
-                     <div className="flex flex-col items-center">
-                        <div className="relative">
-                          <div className="w-16 h-16 border-4 border-violet-600/30 border-t-violet-600 rounded-full animate-spin"></div>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Wand2 className="w-6 h-6 text-violet-500" />
+            <div className={`flex-1 overflow-auto custom-scrollbar flex ${viewMode !== ViewMode.DESKTOP ? 'items-center justify-center py-8' : 'items-stretch'}`}>
+              {generatedHtml ? (
+                <div 
+                  className={`transition-all duration-300 ease-in-out bg-white shadow-2xl flex-shrink-0 mx-auto ${
+                    viewMode === ViewMode.MOBILE ? 'w-[375px] h-[667px] rounded-2xl border-[10px] border-gray-800' :
+                    viewMode === ViewMode.TABLET ? 'w-[768px] h-[1024px] rounded-xl border-[10px] border-gray-800' :
+                    'w-full min-h-full rounded-none border-none'
+                  }`}
+                >
+                  <iframe
+                    title="Generated Preview"
+                    srcDoc={generatedHtml}
+                    className="w-full h-full bg-white rounded-[inherit]"
+                    sandbox="allow-scripts"
+                    style={{ border: 'none', display: 'block' }}
+                  />
+                </div>
+              ) : (
+                 <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8 text-center max-w-md mx-auto">
+                    {isLoading ? (
+                       <div className="flex flex-col items-center">
+                          <div className="relative">
+                            <div className="w-16 h-16 border-4 border-violet-600/30 border-t-violet-600 rounded-full animate-spin"></div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Wand2 className="w-6 h-6 text-violet-500" />
+                            </div>
                           </div>
-                        </div>
-                        <p className="text-xl font-bold text-white mt-6">Generating Page...</p>
-                        <p className="text-sm text-gray-400 mt-2">Writing code, optimizing layout, and styling...</p>
-                     </div>
-                  ) : (
-                     <>
-                       <div className="w-24 h-24 bg-[#1e293b] rounded-full flex items-center justify-center mb-6 shadow-inner ring-1 ring-gray-700">
-                          <Rocket className="w-10 h-10 text-gray-500" />
+                          <p className="text-xl font-bold text-white mt-6">Generating Page...</p>
+                          <p className="text-sm text-gray-400 mt-2">Writing code, optimizing layout, and styling...</p>
                        </div>
-                       <h3 className="text-xl font-semibold text-white mb-2">Ready to Build</h3>
-                       <p className="text-gray-400 leading-relaxed">
-                         Fill out the details on the left sidebar to generate a complete, high-converting landing page in seconds.
-                       </p>
-                     </>
-                  )}
-               </div>
-            )}
+                    ) : (
+                       <>
+                         <div className="w-24 h-24 bg-[#1e293b] rounded-full flex items-center justify-center mb-6 shadow-inner ring-1 ring-gray-700">
+                            <Rocket className="w-10 h-10 text-gray-500" />
+                         </div>
+                         <h3 className="text-xl font-semibold text-white mb-2">Ready to Build</h3>
+                         <p className="text-gray-400 leading-relaxed">
+                           Fill out the details on the left sidebar to generate a complete, high-converting landing page in seconds.
+                         </p>
+                       </>
+                    )}
+                 </div>
+              )}
+            </div>
             
           </div>
         </div>
@@ -372,7 +388,7 @@ export const LandingPageGenerator: React.FC = () => {
       {/* Deploy Modal */}
       {showDeployModal && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#1e293b] w-full max-w-lg rounded-xl border border-gray-700 shadow-2xl overflow-hidden">
+          <div className="bg-[#1e293b] w-full max-w-lg rounded-xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in-up">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-white flex items-center">
@@ -423,7 +439,7 @@ export const LandingPageGenerator: React.FC = () => {
                   <div className="flex w-full space-x-3">
                     <button 
                       onClick={confirmDeploy}
-                      className="flex-1 bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center"
+                      className="flex-1 bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center shadow-lg shadow-violet-900/40"
                     >
                       <Rocket className="w-4 h-4 mr-2" />
                       Publish Now
@@ -447,11 +463,11 @@ export const LandingPageGenerator: React.FC = () => {
               {/* Step 2: Success */}
               {deployStep === 2 && (
                 <div className="py-4 flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4 ring-2 ring-green-500/50">
+                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4 ring-2 ring-green-500/50 animate-bounce-subtle">
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
                   </div>
                   <h4 className="text-white font-bold text-xl">Deployment Successful!</h4>
-                  <p className="text-gray-400 text-sm mt-2 mb-6">Your landing page is now live and accessible worldwide.</p>
+                  <p className="text-gray-400 text-sm mt-2 mb-6">Your landing page is now live.</p>
                   
                   <div className="w-full bg-[#0f1520] p-4 rounded-lg border border-gray-700 flex items-center justify-between mb-6 group cursor-pointer hover:border-violet-500 transition-colors" onClick={() => window.open(liveUrl, '_blank')}>
                     <div className="flex flex-col items-start overflow-hidden mr-4">
@@ -463,7 +479,7 @@ export const LandingPageGenerator: React.FC = () => {
                     <ExternalLink className="w-5 h-5 text-gray-500 group-hover:text-white" />
                   </div>
 
-                  <div className="flex w-full space-x-3">
+                  <div className="flex w-full space-x-3 mb-3">
                     <button 
                       onClick={() => window.open(liveUrl, '_blank')}
                       className="flex-1 bg-violet-600 hover:bg-violet-700 text-white font-medium py-2.5 rounded-lg transition-colors shadow-lg shadow-violet-900/40"
@@ -474,9 +490,17 @@ export const LandingPageGenerator: React.FC = () => {
                       onClick={closeDeployModal}
                       className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-medium py-2.5 rounded-lg transition-colors"
                     >
-                      Back to Editor
+                      Close
                     </button>
                   </div>
+                  
+                  <button 
+                      onClick={handleDownload}
+                      className="w-full bg-[#0f1520] border border-gray-700 hover:border-gray-500 text-gray-300 font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center text-sm"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Code (for GitHub/Netlify)
+                  </button>
                 </div>
               )}
             </div>

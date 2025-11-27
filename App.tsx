@@ -10,10 +10,10 @@ export default function App() {
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
         {/* Header / Banner Area */}
-        <div className="bg-[#0f172a] px-8 pt-6 pb-2">
+        <div className="bg-[#0f172a] px-8 pt-6 pb-2 flex-shrink-0">
            <div className="flex justify-between items-center mb-4">
               <h1 className="text-2xl font-bold text-white">Lead Gen & Content</h1>
               <button className="bg-[#1e293b] hover:bg-[#2d3b55] text-gray-300 px-4 py-1.5 rounded-md text-sm border border-gray-700 transition-colors">
